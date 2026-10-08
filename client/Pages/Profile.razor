@@ -1,0 +1,984 @@
+
+@page "/profile"
+@using MudBlazor
+@using System.Globalization
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+
+    <!-- PROFILE HEADER -->
+
+    <MudPaper Elevation="0"
+              Class="pa-6"
+              Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 16px;">
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+
+            <MudAvatar Size="Size.Large">
+                <MudImage Src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120"
+                          Alt="Profile photo" />
+            </MudAvatar>
+
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.h5">
+                    @profileName
+                </MudText>
+
+                <MudText Typo="Typo.body2" Style="color: #777777;">
+                    @profileLocation · Member since @memberSince
+                </MudText>
+
+                <MudText Typo="Typo.body2">
+                    4.9 ★ · 18 items sold · Usually replies within an hour
+                </MudText>
+            </MudStack>
+
+            <MudSpacer />
+
+            <MudButton Variant="Variant.Outlined"
+                       OnClick="OpenEditProfile"
+                       Style="border-radius: 20px; text-transform: none;">
+                Edit Profile
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Href="/post-item"
+                       Style="background-color: #DE5844; color: white; border-radius: 20px; text-transform: none;">
+                + Post New Item
+            </MudButton>
+
+        </MudStack>
+    </MudPaper>
+
+    <!-- EDIT PROFILE -->
+
+    @if (isEditingProfile)
+    {
+        <MudPaper Elevation="4"
+                  Class="pa-6 mt-4"
+                  Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 16px;">
+
+            <MudText Typo="Typo.h6" Class="mb-4">
+                Edit Profile
+            </MudText>
+
+            <MudStack Spacing="3">
+
+                <MudTextField T="string"
+                              Label="Full Name"
+                              @bind-Value="editedName"
+                              Variant="Variant.Outlined" />
+
+                <MudTextField T="string"
+                              Label="Location"
+                              @bind-Value="editedLocation"
+                              Variant="Variant.Outlined" />
+
+                <MudTextField T="string"
+                              Label="Member Since"
+                              @bind-Value="editedMemberSince"
+                              Variant="Variant.Outlined" />
+
+                <MudStack Row="true"
+                          Justify="Justify.FlexEnd"
+                          Spacing="2">
+
+                    <MudButton Variant="Variant.Outlined"
+                               OnClick="CancelEditProfile"
+                               Style="border-radius: 20px; text-transform: none;">
+                        Cancel
+                    </MudButton>
+
+                    <MudButton Variant="Variant.Filled"
+                               OnClick="SaveProfile"
+                               Style="background-color: #DE5844; color: white; border-radius: 20px; text-transform: none;">
+                        Save Changes
+                    </MudButton>
+
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    }
+
+    <!-- TABS -->
+
+    <MudTabs Class="mt-6"
+             Rounded="false"
+             Color="Color.Default"
+             SliderColor="Color.Error"
+             Elevation="0"
+             TabPanelsClass="pa-4"
+             Style="background-color: transparent;">
+
+        <!-- ACTIVE LISTINGS -->
+
+        <MudTabPanel Text="@($"Active Listings ({ActiveCount})")">
+
+            @foreach (var item in listings.Where(x => x.Status == ListingStatus.Active))
+            {
+                <MudPaper @key="item.Id"
+                          Elevation="0"
+                          Class="pa-4 mb-2"
+                          Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 12px;">
+
+                    <MudStack Row="true"
+                              AlignItems="AlignItems.Center"
+                              Spacing="3">
+
+                        <MudImage Src="@item.Image"
+                                  Width="70"
+                                  Height="70"
+                                  ObjectFit="ObjectFit.Cover"
+                                  Style="border-radius: 8px;" />
+
+                        <MudStack Spacing="1">
+
+                            <MudText Typo="Typo.subtitle1">
+                                @item.Name
+                            </MudText>
+
+                            <MudText Style="color: #DE5844;">
+                                $@item.Price.ToString("0.##", CultureInfo.InvariantCulture)
+                            </MudText>
+
+                            <MudText Typo="Typo.caption"
+                                     Style="color: #777777;">
+                                @item.Posted
+                            </MudText>
+                        </MudStack>
+
+                        <MudSpacer />
+
+                        <MudStack Row="true" Spacing="4" Class="mr-6">
+
+                            <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                                    @item.Views
+                                </MudText>
+                                <MudText Typo="Typo.caption" Style="color: #777777;">
+                                    views
+                                </MudText>
+                            </MudStack>
+
+                            <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                                    @item.Inquiries
+                                </MudText>
+                                <MudText Typo="Typo.caption" Style="color: #777777;">
+                                    inquiries
+                                </MudText>
+                            </MudStack>
+
+                        </MudStack>
+
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Success"
+                                   OnClick="@(() => MarkAsSold(item.Id))"
+                                   Style="text-transform: none;">
+                            Mark as Sold
+                        </MudButton>
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Default"
+                                       OnClick="@(() => OpenEditListing(item.Id))" />
+
+                        <MudMenu Icon="@Icons.Material.Filled.MoreHoriz"
+                                 Color="Color.Default"
+                                 Dense="true">
+
+                            <MudMenuItem OnClick="@(() => ViewDetails(item.Id))">
+                                View Details
+                            </MudMenuItem>
+
+                            <MudMenuItem OnClick="@(() => ArchiveListing(item.Id))">
+                                Archive Listing
+                            </MudMenuItem>
+
+                            <MudMenuItem OnClick="@(() => OpenDeleteConfirmation(item.Id))">
+                                Delete Listing
+                            </MudMenuItem>
+
+                        </MudMenu>
+
+                    </MudStack>
+
+                    <!-- DETAILS DIRECTLY UNDER THIS ITEM -->
+
+                    @if (detailsListingId == item.Id)
+                    {
+                        <MudDivider Class="my-4" />
+
+                        <MudStack Spacing="2" Class="pa-2">
+
+                            <MudText Typo="Typo.subtitle1">
+                                Listing Details
+                            </MudText>
+
+                            <MudText>
+                                @item.Description
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Style="color: #777777;">
+                                @item.Posted · @item.Views views · @item.Inquiries inquiries
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Style="color: #777777;">
+                                Status: @item.Status
+                            </MudText>
+
+                            <MudStack Row="true" Justify="Justify.FlexEnd">
+                                <MudButton Variant="Variant.Outlined"
+                                           OnClick="CloseDetails"
+                                           Style="border-radius: 20px; text-transform: none;">
+                                    Close
+                                </MudButton>
+                            </MudStack>
+
+                        </MudStack>
+                    }
+
+                    <!-- EDIT FORM DIRECTLY UNDER THIS ITEM -->
+
+                    @if (editingListingId == item.Id)
+                    {
+                        <MudDivider Class="my-4" />
+
+                        <MudStack Spacing="3" Class="pa-2">
+
+                            <MudText Typo="Typo.subtitle1">
+                                Edit Listing
+                            </MudText>
+
+                            <MudTextField T="string"
+                                          Label="Item Name"
+                                          @bind-Value="editedListingName"
+                                          Variant="Variant.Outlined" />
+
+                            <MudNumericField T="decimal"
+                                             Label="Price ($)"
+                                             @bind-Value="editedListingPrice"
+                                             Min="0.01m"
+                                             Variant="Variant.Outlined" />
+
+                            <MudTextField T="string"
+                                          Label="Description"
+                                          @bind-Value="editedListingDescription"
+                                          Lines="4"
+                                          Variant="Variant.Outlined" />
+
+                            @if (!string.IsNullOrEmpty(listingError))
+                            {
+                                <MudText Color="Color.Error" Typo="Typo.body2">
+                                    @listingError
+                                </MudText>
+                            }
+
+                            <MudStack Row="true"
+                                      Justify="Justify.FlexEnd"
+                                      Spacing="2">
+
+                                <MudButton Variant="Variant.Outlined"
+                                           OnClick="CancelEditListing"
+                                           Style="border-radius: 20px; text-transform: none;">
+                                    Cancel
+                                </MudButton>
+
+                                <MudButton Variant="Variant.Filled"
+                                           OnClick="SaveListing"
+                                           Style="background-color: #DE5844; color: white; border-radius: 20px; text-transform: none;">
+                                    Save Changes
+                                </MudButton>
+
+                            </MudStack>
+                        </MudStack>
+                    }
+
+                    <!-- DELETE CONFIRMATION UNDER THIS ITEM -->
+
+                    @if (deletingListingId == item.Id)
+                    {
+                        <MudDivider Class="my-4" />
+
+                        <MudStack Spacing="2" Class="pa-2">
+
+                            <MudText Typo="Typo.subtitle1" Color="Color.Error">
+                                Delete Listing?
+                            </MudText>
+
+                            <MudText>
+                                Are you sure you want to delete "@item.Name"?
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Style="color: #777777;">
+                                This action cannot be undone.
+                            </MudText>
+
+                            <MudStack Row="true"
+                                      Justify="Justify.FlexEnd"
+                                      Spacing="2">
+
+                                <MudButton Variant="Variant.Outlined"
+                                           OnClick="CancelDelete"
+                                           Style="border-radius: 20px; text-transform: none;">
+                                    Cancel
+                                </MudButton>
+
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Error"
+                                           OnClick="ConfirmDelete"
+                                           Style="border-radius: 20px; text-transform: none;">
+                                    Delete Listing
+                                </MudButton>
+
+                            </MudStack>
+                        </MudStack>
+                    }
+
+                </MudPaper>
+            }
+
+            @if (ActiveCount == 0)
+            {
+                <MudText Class="pa-4" Style="color: #777777;">
+                    You have no active listings.
+                </MudText>
+            }
+
+        </MudTabPanel>
+
+        <!-- SOLD AND ARCHIVED -->
+
+        <MudTabPanel Text="@($"Sold & Archived ({SoldCount})")">
+
+            @foreach (var item in listings.Where(x => x.Status != ListingStatus.Active))
+            {
+                <MudPaper @key="item.Id"
+                          Elevation="0"
+                          Class="pa-4 mb-2"
+                          Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 12px;">
+
+                    <MudStack Row="true"
+                              AlignItems="AlignItems.Center"
+                              Spacing="3">
+
+                        <MudImage Src="@item.Image"
+                                  Width="70"
+                                  Height="70"
+                                  ObjectFit="ObjectFit.Cover"
+                                  Style="border-radius: 8px;" />
+
+                        <MudStack Spacing="1">
+
+                            <MudText Typo="Typo.subtitle1">
+                                @item.Name
+                            </MudText>
+
+                            <MudText Style="color: #DE5844;">
+                                $@item.Price.ToString("0.##", CultureInfo.InvariantCulture)
+                            </MudText>
+                        </MudStack>
+
+                        <MudSpacer />
+
+                        @if (item.Status == ListingStatus.Sold)
+                        {
+                            <MudText Style="color: #4A7C59; font-weight: 600;">
+                                Sold
+                            </MudText>
+                        }
+                        else
+                        {
+                            <MudText Style="color: #777777; font-weight: 600;">
+                                Archived
+                            </MudText>
+                        }
+
+                        <MudMenu Icon="@Icons.Material.Filled.MoreHoriz"
+                                 Color="Color.Default"
+                                 Dense="true">
+
+                            <MudMenuItem OnClick="@(() => ViewDetails(item.Id))">
+                                View Details
+                            </MudMenuItem>
+
+                            @if (item.Status == ListingStatus.Archived)
+                            {
+                                <MudMenuItem OnClick="@(() => RestoreListing(item.Id))">
+                                    Restore Listing
+                                </MudMenuItem>
+                            }
+
+                            <MudMenuItem OnClick="@(() => OpenDeleteConfirmation(item.Id))">
+                                Delete Listing
+                            </MudMenuItem>
+
+                        </MudMenu>
+
+                    </MudStack>
+
+                    <!-- DETAILS UNDER SOLD OR ARCHIVED ITEM -->
+
+                    @if (detailsListingId == item.Id)
+                    {
+                        <MudDivider Class="my-4" />
+
+                        <MudStack Spacing="2" Class="pa-2">
+
+                            <MudText Typo="Typo.subtitle1">
+                                Listing Details
+                            </MudText>
+
+                            <MudText>
+                                @item.Description
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Style="color: #777777;">
+                                @item.Posted · @item.Views views · @item.Inquiries inquiries
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Style="color: #777777;">
+                                Status: @item.Status
+                            </MudText>
+
+                            <MudStack Row="true" Justify="Justify.FlexEnd">
+                                <MudButton Variant="Variant.Outlined"
+                                           OnClick="CloseDetails"
+                                           Style="border-radius: 20px; text-transform: none;">
+                                    Close
+                                </MudButton>
+                            </MudStack>
+
+                        </MudStack>
+                    }
+
+                    <!-- DELETE CONFIRMATION -->
+
+                    @if (deletingListingId == item.Id)
+                    {
+                        <MudDivider Class="my-4" />
+
+                        <MudStack Spacing="2" Class="pa-2">
+
+                            <MudText Typo="Typo.subtitle1" Color="Color.Error">
+                                Delete Listing?
+                            </MudText>
+
+                            <MudText>
+                                Are you sure you want to delete "@item.Name"?
+                            </MudText>
+
+                            <MudStack Row="true"
+                                      Justify="Justify.FlexEnd"
+                                      Spacing="2">
+
+                                <MudButton Variant="Variant.Outlined"
+                                           OnClick="CancelDelete"
+                                           Style="border-radius: 20px; text-transform: none;">
+                                    Cancel
+                                </MudButton>
+
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Error"
+                                           OnClick="ConfirmDelete"
+                                           Style="border-radius: 20px; text-transform: none;">
+                                    Delete Listing
+                                </MudButton>
+
+                            </MudStack>
+
+                        </MudStack>
+                    }
+
+                </MudPaper>
+            }
+
+            @if (!listings.Any(x => x.Status != ListingStatus.Active))
+            {
+                <MudText Style="color: #777777;">
+                    My sold and archived items will appear here.
+                </MudText>
+            }
+
+        </MudTabPanel>
+
+        <!-- SAVED FAVORITES -->
+
+        <MudTabPanel Text="@($"Saved / Favorites ({FavoriteCount})")">
+
+            @foreach (var favorite in favorites)
+            {
+                <MudPaper @key="favorite.Id"
+                          Elevation="0"
+                          Class="pa-4 mb-2"
+                          Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 12px;">
+
+                    <MudStack Row="true"
+                              AlignItems="AlignItems.Center"
+                              Spacing="3">
+
+                        <MudImage Src="@favorite.Image"
+                                  Width="70"
+                                  Height="70"
+                                  ObjectFit="ObjectFit.Cover"
+                                  Style="border-radius: 8px;" />
+
+                        <MudStack Spacing="1">
+
+                            <MudText Typo="Typo.subtitle1">
+                                @favorite.Name
+                            </MudText>
+
+                            <MudText Style="color: #DE5844;">
+                                $@favorite.Price.ToString("0.##", CultureInfo.InvariantCulture)
+                            </MudText>
+
+                            <MudText Typo="Typo.caption"
+                                     Style="color: #777777;">
+                                @favorite.Location
+                            </MudText>
+
+                        </MudStack>
+
+                        <MudSpacer />
+
+                        <MudButton Variant="Variant.Outlined"
+                                   OnClick="@(() => ViewFavoriteDetails(favorite.Id))"
+                                   Style="border-radius: 20px; text-transform: none;">
+                            View Details
+                        </MudButton>
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Favorite"
+                                       Color="Color.Error"
+                                       OnClick="@(() => RemoveFavorite(favorite.Id))" />
+
+                    </MudStack>
+
+                    <!-- FAVORITE DETAILS DIRECTLY UNDER ITEM -->
+
+                    @if (detailsFavoriteId == favorite.Id)
+                    {
+                        <MudDivider Class="my-4" />
+
+                        <MudStack Spacing="2" Class="pa-2">
+
+                            <MudText Typo="Typo.subtitle1">
+                                Saved Item Details
+                            </MudText>
+
+                            <MudText>
+                                @favorite.Description
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Style="color: #777777;">
+                                Location: @favorite.Location
+                            </MudText>
+
+                            <MudStack Row="true" Justify="Justify.FlexEnd">
+
+                                <MudButton Variant="Variant.Outlined"
+                                           OnClick="CloseFavoriteDetails"
+                                           Style="border-radius: 20px; text-transform: none;">
+                                    Close
+                                </MudButton>
+
+                            </MudStack>
+
+                        </MudStack>
+                    }
+
+                </MudPaper>
+            }
+
+            @if (FavoriteCount == 0)
+            {
+                <MudText Class="pa-4" Style="color: #777777;">
+                    You have no saved items.
+                </MudText>
+            }
+
+        </MudTabPanel>
+
+    </MudTabs>
+
+</MudContainer>
+
+@code {
+
+    // PROFILE
+
+    private string profileName = "Maya Rivera";
+    private string profileLocation = "North Park, San Diego";
+    private string memberSince = "2022";
+
+    private string editedName = "";
+    private string editedLocation = "";
+    private string editedMemberSince = "";
+
+    private bool isEditingProfile = false;
+
+    private void OpenEditProfile()
+    {
+        editedName = profileName;
+        editedLocation = profileLocation;
+        editedMemberSince = memberSince;
+
+        CloseAllPanels();
+        isEditingProfile = true;
+    }
+
+    private void SaveProfile()
+    {
+        if (string.IsNullOrWhiteSpace(editedName) ||
+            string.IsNullOrWhiteSpace(editedLocation) ||
+            string.IsNullOrWhiteSpace(editedMemberSince))
+        {
+            return;
+        }
+
+        profileName = editedName.Trim();
+        profileLocation = editedLocation.Trim();
+        memberSince = editedMemberSince.Trim();
+
+        isEditingProfile = false;
+    }
+
+    private void CancelEditProfile()
+    {
+        isEditingProfile = false;
+    }
+
+    // LISTING STATUS
+
+    private enum ListingStatus
+    {
+        Active,
+        Sold,
+        Archived
+    }
+
+    // LISTING MODEL
+
+    private class ProfileListing
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public decimal Price { get; set; }
+        public string Description { get; set; } = "";
+        public string Image { get; set; } = "";
+        public string Posted { get; set; } = "";
+        public int Views { get; set; }
+        public int Inquiries { get; set; }
+        public ListingStatus Status { get; set; } = ListingStatus.Active;
+    }
+
+    // FAVORITE MODEL
+
+    private class FavoriteListing
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public decimal Price { get; set; }
+        public string Description { get; set; } = "";
+        public string Image { get; set; } = "";
+        public string Location { get; set; } = "";
+    }
+
+    // LISTINGS
+
+    private List<ProfileListing> listings = new()
+    {
+        new ProfileListing
+        {
+            Id = 1,
+            Name = "Heirloom Tomato Basket",
+            Price = 12m,
+            Description = "Fresh heirloom tomatoes from a local garden.",
+            Image = "/images/tomato-basket.png",
+            Posted = "Posted 2 days ago",
+            Views = 48,
+            Inquiries = 3
+        },
+
+        new ProfileListing
+        {
+            Id = 2,
+            Name = "Walnut Floating Shelf",
+            Price = 38m,
+            Description = "Handmade walnut floating shelf in great condition.",
+            Image = "/images/walnut-shelf.png",
+            Posted = "Posted 5 days ago",
+            Views = 31,
+            Inquiries = 2
+        },
+
+        new ProfileListing
+        {
+            Id = 3,
+            Name = "Linen Picnic Blanket",
+            Price = 24m,
+            Description = "Soft linen picnic blanket, perfect for outdoor use.",
+            Image = "/images/linen-blanket.png",
+            Posted = "Posted 1 week ago",
+            Views = 76,
+            Inquiries = 6
+        }
+    };
+
+    // FAVORITES
+
+    private List<FavoriteListing> favorites = new()
+    {
+        new FavoriteListing
+        {
+            Id = 101,
+            Name = "Vintage Table Lamp",
+            Price = 28m,
+            Description = "A beautiful vintage lamp in good condition.",
+            Image = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=300",
+            Location = "North Park, San Diego"
+        },
+
+        new FavoriteListing
+        {
+            Id = 102,
+            Name = "Wooden Dining Chair",
+            Price = 35m,
+            Description = "Solid wooden chair with a classic design.",
+            Image = "https://images.unsplash.com/photo-1503602642458-232111445657?w=300",
+            Location = "Hillcrest, San Diego"
+        },
+
+        new FavoriteListing
+        {
+            Id = 103,
+            Name = "Potted Green Plant",
+            Price = 15m,
+            Description = "Healthy indoor plant with a decorative pot.",
+            Image = "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=300",
+            Location = "University Heights, San Diego"
+        },
+
+        new FavoriteListing
+        {
+            Id = 104,
+            Name = "Used Bicycle",
+            Price = 120m,
+            Description = "Comfortable bicycle, perfect for city rides.",
+            Image = "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=300",
+            Location = "Normal Heights, San Diego"
+        },
+
+        new FavoriteListing
+        {
+            Id = 105,
+            Name = "Ceramic Coffee Mug",
+            Price = 10m,
+            Description = "Handmade ceramic coffee mug.",
+            Image = "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=300",
+            Location = "North Park, San Diego"
+        }
+    };
+
+    // COUNTERS
+
+    private int ActiveCount =>
+        listings.Count(x => x.Status == ListingStatus.Active);
+
+    private int SoldCount =>
+        12 + listings.Count(x => x.Status != ListingStatus.Active);
+
+    private int FavoriteCount =>
+        favorites.Count;
+
+    // PANEL STATE
+
+    private int? detailsListingId;
+    private int? detailsFavoriteId;
+    private int? deletingListingId;
+    private int? editingListingId;
+
+    private string editedListingName = "";
+    private decimal editedListingPrice = 0m;
+    private string editedListingDescription = "";
+    private string listingError = "";
+
+    // MARK AS SOLD
+
+    private void MarkAsSold(int id)
+    {
+        var item = listings.FirstOrDefault(x => x.Id == id);
+
+        if (item == null || item.Status != ListingStatus.Active)
+            return;
+
+        item.Status = ListingStatus.Sold;
+
+        CloseAllPanels();
+    }
+
+    // VIEW LISTING DETAILS
+
+    private void ViewDetails(int id)
+    {
+        if (detailsListingId == id)
+        {
+            CloseDetails();
+            return;
+        }
+
+        CloseAllPanels();
+        detailsListingId = id;
+    }
+
+    private void CloseDetails()
+    {
+        detailsListingId = null;
+    }
+
+    // EDIT LISTING
+
+    private void OpenEditListing(int id)
+    {
+        var item = listings.FirstOrDefault(x => x.Id == id);
+
+        if (item == null || item.Status != ListingStatus.Active)
+            return;
+
+        CloseAllPanels();
+        isEditingProfile = false;
+
+        editingListingId = id;
+        editedListingName = item.Name;
+        editedListingPrice = item.Price;
+        editedListingDescription = item.Description;
+    }
+
+    private void SaveListing()
+    {
+        if (string.IsNullOrWhiteSpace(editedListingName))
+        {
+            listingError = "Please enter an item name.";
+            return;
+        }
+
+        if (editedListingPrice <= 0)
+        {
+            listingError = "Price must be greater than zero.";
+            return;
+        }
+
+        var item = listings.FirstOrDefault(x => x.Id == editingListingId);
+
+        if (item == null || item.Status != ListingStatus.Active)
+        {
+            listingError = "This listing is no longer available for editing.";
+            return;
+        }
+
+        item.Name = editedListingName.Trim();
+        item.Price = editedListingPrice;
+        item.Description = editedListingDescription.Trim();
+
+        CancelEditListing();
+    }
+
+    private void CancelEditListing()
+    {
+        editingListingId = null;
+        listingError = "";
+    }
+
+    // ARCHIVE LISTING
+
+    private void ArchiveListing(int id)
+    {
+        var item = listings.FirstOrDefault(x => x.Id == id);
+
+        if (item == null || item.Status != ListingStatus.Active)
+            return;
+
+        item.Status = ListingStatus.Archived;
+        CloseAllPanels();
+    }
+
+    // RESTORE LISTING
+
+    private void RestoreListing(int id)
+    {
+        var item = listings.FirstOrDefault(x => x.Id == id);
+
+        if (item == null || item.Status != ListingStatus.Archived)
+            return;
+
+        item.Status = ListingStatus.Active;
+        CloseAllPanels();
+    }
+
+    // DELETE LISTING
+
+    private void OpenDeleteConfirmation(int id)
+    {
+        CloseAllPanels();
+        deletingListingId = id;
+    }
+
+    private void ConfirmDelete()
+    {
+        if (deletingListingId == null)
+            return;
+
+        var item = listings.FirstOrDefault(x => x.Id == deletingListingId);
+
+        if (item != null)
+            listings.Remove(item);
+
+        CloseAllPanels();
+    }
+
+    private void CancelDelete()
+    {
+        deletingListingId = null;
+    }
+
+    // FAVORITE DETAILS
+
+    private void ViewFavoriteDetails(int id)
+    {
+        if (detailsFavoriteId == id)
+        {
+            CloseFavoriteDetails();
+            return;
+        }
+
+        CloseAllPanels();
+        detailsFavoriteId = id;
+    }
+
+    private void CloseFavoriteDetails()
+    {
+        detailsFavoriteId = null;
+    }
+
+    private void RemoveFavorite(int id)
+    {
+        var favorite = favorites.FirstOrDefault(x => x.Id == id);
+
+        if (favorite == null)
+            return;
+
+        favorites.Remove(favorite);
+
+        if (detailsFavoriteId == id)
+            CloseFavoriteDetails();
+    }
+
+    // CLOSE PANELS
+
+    private void CloseAllPanels()
+    {
+        detailsListingId = null;
+        detailsFavoriteId = null;
+        deletingListingId = null;
+        editingListingId = null;
+        listingError = "";
+    }
+}
