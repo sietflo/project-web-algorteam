@@ -77,7 +77,6 @@ public class ListingStateService
     public bool IsAuthenticated { get; private set; } = false;
     public string CurrentUserName { get; private set; } = "Guest";
 
-    // Событие для оповещения компонентов о смене стейта
     public event Action? OnChange;
 
     public void Login(string userName = "Maya R.")
