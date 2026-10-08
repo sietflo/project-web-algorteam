@@ -1,0 +1,70 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject client.Services.ListingStateService StateService
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Style="background-color: #F8F6F0; border-bottom: 1px solid #ECE8DE;" Class="px-6">
+        <!-- Наш логотип -->
+        <NearBuyLogo Height="36" OnClick="NavHome" />
+
+        <MudSpacer />
+
+        <div style="flex: 1; max-width: 520px; margin: 0 24px; position: relative;">
+            <MudTextField @bind-Value="StateService.SearchQuery"
+                          Placeholder="Search for bikes, books, lamps..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          AdornmentColor="Color.Default"
+                          Style="background-color: #FFFFFF; border-radius: 24px;"
+                          Class="rounded-pill" />
+        </div>
+
+        <MudSpacer />
+
+        @if (StateService.IsAuthenticated)
+        {
+            <MudButton Href="/profile" Variant="Variant.Text" Color="Color.Dark" Class="mr-2" Style="text-transform: none;">
+                @StateService.CurrentUserName
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Text" Color="Color.Dark" OnClick='() => StateService.Login("Maya R.")' Class="mr-3" Style="text-transform: none;">
+                Sign In
+            </MudButton>
+        }
+
+        <MudButton Variant="Variant.Filled" 
+                Style="background-color: #DE5844; color: white; border-radius: 20px; text-transform: none; font-weight: 500;" 
+                Href="/post-item">
+            + Post an item
+        </MudButton>
+    </MudAppBar>
+
+    <MudMainContent Class="pa-6" Style="background-color: #FAF8F5; min-height: 100vh;">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    [Inject] private NavigationManager NavManager { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        StateService.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        StateService.OnChange -= StateHasChanged;
+    }
+
+    private void NavHome() => NavManager.NavigateTo("/");
+}

@@ -1,0 +1,8 @@
+@page "/listings/{id:int}"
+
+<MudText Typo="Typo.h4">Listing Details for ID: @Id</MudText>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+}
