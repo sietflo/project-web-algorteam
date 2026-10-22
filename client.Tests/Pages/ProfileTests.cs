@@ -49,4 +49,40 @@ public class ProfileTests
             await context.DisposeAsync();
         }
     }
+
+    [Fact]
+    public async Task Profile_ShouldRenderLoadingState_WhenDataIsLoading()
+    {
+        var context = new BunitContext();
+
+        try
+        {
+            context.JSInterop.Mode = JSRuntimeMode.Loose;
+            context.Services.AddMudServices();
+
+            var profileState = new ProfileStateService();
+
+            // Arrange: імітуємо завантаження
+            profileState.SetLoading();
+
+            context.Services.AddSingleton(profileState);
+
+            // Act
+            var cut = context.Render<Profile>();
+
+            // Assert
+            Assert.NotNull(
+                cut.Find("[data-testid='loading-state']")
+            );
+
+            Assert.Contains(
+                "Loading profile...",
+                cut.Markup
+            );
+        }
+        finally
+        {
+            await context.DisposeAsync();
+        }
+    }
 }
