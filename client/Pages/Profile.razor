@@ -100,6 +100,31 @@
         </MudPaper>
     }
 
+    <!-- PROFILE LOADING STATE -->
+
+    @if (ProfileState.State == client.Services.ProfileLoadState.Loading)
+    {
+        <MudPaper Elevation="0"
+                  Class="pa-6 mt-4"
+                  Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 16px;">
+
+            <div data-testid="loading-state">
+                <MudStack Row="true"
+                          AlignItems="AlignItems.Center"
+                          Spacing="3">
+
+                    <MudProgressCircular Indeterminate="true"
+                                         Color="Color.Primary"
+                                         Size="Size.Small" />
+
+                    <MudText>Loading profile...</MudText>
+
+                </MudStack>
+            </div>
+
+        </MudPaper>
+    }
+
     <!-- TABS -->
 
     <MudTabs Class="mt-6"
@@ -970,4 +995,5 @@
         listingError = "";
     }
 }
+
 
