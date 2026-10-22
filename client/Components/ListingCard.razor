@@ -1,5 +1,44 @@
-<div>Listing Card Placeholder</div>
+@inject NavigationManager NavManager
+
+<MudCard Elevation="0" Style="border-radius: 16px; border: 1px solid #EFECE6; background-color: #FFFFFF;" Class="h-100 d-flex flex-column pa-2">
+    <div style="position: relative; width: 100%; height: 180px; overflow: hidden; border-radius: 12px;">
+        <img src="@Item.ImageUrls[0]" alt="@Item.Title" style="width: 100%; height: 100%; object-fit: cover;" />
+    </div>
+
+    <MudCardContent Class="px-2 py-3 flex-grow-1 d-flex flex-column justify-space-between">
+        <div>
+            <div class="d-flex align-center justify-space-between mb-1">
+                <MudText Typo="Typo.h6" Style="font-weight: 700; color: #DE5844;">
+                    $@Item.Price
+                </MudText>
+                <MudChip T="string" Size="Size.Small" Style="background-color: #F4F0E8; color: #666; font-size: 11px; height: 22px;">
+                    @Item.Category
+                </MudChip>
+            </div>
+
+            <MudText Typo="Typo.body1" Style="font-weight: 600; color: #2D2B2A; line-height: 1.3;" Class="mb-1">
+                @Item.Title
+            </MudText>
+            <div class="d-flex align-center" style="color: #888; font-size: 12px;">
+                <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Style="font-size: 14px; margin-right: 2px;" />
+                <span>@Item.Location</span>
+            </div>
+        </div>
+        <MudButton Variant="Variant.Outlined" 
+                   FullWidth="true"
+                   OnClick="OpenDetails"
+                   Style="border-color: #E0DDD5; color: #DE5844; border-radius: 12px; text-transform: none; font-weight: 600; margin-top: 12px;">
+            View Details
+        </MudButton>
+    </MudCardContent>
+</MudCard>
 
 @code {
+    [Parameter, EditorRequired]
+    public ListingItem Item { get; set; } = default!;
 
+    private void OpenDetails()
+    {
+        NavManager.NavigateTo($"/listings/{Item.Id}");
+    }
 }

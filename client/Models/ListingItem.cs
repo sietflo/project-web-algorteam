@@ -3,6 +3,7 @@ namespace client.Models;
 public class ListingItem
 {
     public int Id { get; set; }
+    public string Category { get; set; } = string.Empty; // e.g. "Furniture", "Electronics", "Clothing"
     public string Title { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public string Status { get; set; } = "Available"; // e.g. "Available", "Pending", "Sold"

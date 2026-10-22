@@ -9,12 +9,12 @@
 
 <MudLayout>
     <MudAppBar Elevation="0" Style="background-color: #F8F6F0; border-bottom: 1px solid #ECE8DE;" Class="px-6">
-        <!-- Наш логотип -->
+
         <NearBuyLogo Height="36" OnClick="NavHome" />
 
         <MudSpacer />
 
-        <div style="flex: 1; max-width: 520px; margin: 0 24px; position: relative;">
+        <div style="flex: 1; max-width: 1200px; position: relative;">
             <MudTextField @bind-Value="StateService.SearchQuery"
                           Placeholder="Search for bikes, books, lamps..."
                           Variant="Variant.Outlined"
@@ -48,8 +48,11 @@
         </MudButton>
     </MudAppBar>
 
-    <MudMainContent Class="pa-6" Style="background-color: #FAF8F5; min-height: 100vh;">
-        @Body
+    <MudMainContent Style="background-color: #FAF8F5; min-height: 100vh;" Class="d-flex flex-column justify-space-between">
+        <div>
+            @Body
+        </div>
+        <Footer />
     </MudMainContent>
 </MudLayout>
 

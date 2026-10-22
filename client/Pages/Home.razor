@@ -1,7 +1,175 @@
 ﻿@page "/"
+@inject client.Services.ListingStateService StateService
 
-<PageTitle>Home</PageTitle>
+<PageTitle>NearBuy - Find what you need nearby</PageTitle>
 
-<h1>Hello, world!</h1>
+<!-- Верхний баннер (Hero Section) -->
+<div style="max-width: 1200px; margin: 0 auto; padding-top: 48px; padding-bottom: 48px;" class="px-4">
+    <MudGrid Class="align-center">
+        <!-- Левый текстовый блок -->
+        <MudItem xs="12" md="5" Class="pr-md-4">
+            <div style="display: inline-flex; align-items: center; gap: 6px; background-color: #E2EFE7; color: #3A694B; font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 16px;" class="mb-4">
+                <span style="font-size: 10px;">●</span> Your neighborhood marketplace
+            </div>
+            
+            <MudText Typo="Typo.h2" Style="font-weight: 800; color: #1E1E1E; line-height: 1.15; font-size: calc(2rem + 1.5vw);" Class="mb-4">
+                Find what you<br />need nearby
+            </MudText>
+            
+            <MudText Typo="Typo.body1" Style="color: #666; font-size: 15px; line-height: 1.6; max-width: 420px;" Class="mb-6">
+                Buy and sell useful items with students and neighbors in your local community—simple, friendly, and close to home.
+            </MudText>
+            
+            <div class="d-flex align-center gap-4">
+                <MudButton Variant="Variant.Filled" 
+                           Style="background-color: #DE5844; color: white; border-radius: 24px; text-transform: none; padding: 10px 24px; font-weight: 600; box-shadow: none;">
+                    Browse NearBuy
+                </MudButton>
+                <MudText Typo="Typo.body2" Style="color: #777; font-size: 14px;">
+                    ♡ Local finds, real people
+                </MudText>
+            </div>
+        </MudItem>
 
-Welcome to your new app.
+        <!-- Правый блок с фото и карточкой расстояния -->
+        <MudItem xs="12" md="7">
+            <div style="display: flex; gap: 16px; align-items: flex-start; justify-content: flex-end; position: relative;">
+                <div style="flex: 2; height: 320px; border-radius: 24px; overflow: hidden;">
+                    <img src="https://www.intrepidtravel.com/adventures/wp-content/uploads/2018/06/turkey-credit-Joshua-Tagicakibau.jpg" 
+                         alt="Community" 
+                         style="width: 100%; height: 100%; object-fit: cover;" />
+                </div>
+
+                <div style="flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 16px;">
+                    <div style="height: 180px; border-radius: 20px; overflow: hidden;">
+                        <img src="https://hips.hearstapps.com/hmg-prod/images/886ff9e2-b633-4a60-be9c-8a7f18e51d31.jpg" 
+                             alt="Bike nearby" 
+                             style="width: 100%; height: 100%; object-fit: cover;" />
+                    </div>
+
+                    <div style="background-color: #F6D268; padding: 24px; border-radius: 20px; color: #1E1E1E;">
+                        <div style="font-size: 26px; font-weight: 800; line-height: 1;">1.5 mi</div>
+                        <div style="font-size: 12px; color: #333; line-height: 1.2; margin-top: 6px;">average distance to a great find</div>
+                    </div>
+                </div>
+            </div>
+        </MudItem>
+    </MudGrid>
+</div>
+
+<!-- Блок каталога с цветным фоном -->
+<div style="background-color: #F0EADF; width: 100%; padding-top: 48px; padding-bottom: 64px;">
+    <div style="max-width: 1200px; margin: 0 auto;" class="px-4">
+        
+        <!-- Заголовок секции -->
+        <div class="d-flex align-center justify-space-between mb-4">
+            <div>
+                <MudText Typo="Typo.caption" Style="color: #DE5844; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">
+                    FRESH FINDS AROUND YOU
+                </MudText>
+                <MudText Typo="Typo.h4" Style="font-weight: 700; color: #1E1E1E;">
+                    Recently Listed
+                </MudText>
+            </div>
+            <MudText Typo="Typo.body2" Style="color: #777;">
+                Updated today • @FilteredItems.Count() local finds
+            </MudText>
+        </div>
+
+        <!-- Фильтры категорий -->
+        <div class="d-flex align-center gap-2 mb-6" style="overflow-x: auto;">
+            @foreach (var category in categories)
+            {
+                <MudChip T="string" 
+                         OnClick="() => SelectCategory(category)"
+                         Style="@GetCategoryStyle(category)"
+                         Class="px-4">
+                    @category
+                </MudChip>
+            }
+        </div>
+
+        <!-- 4 состояния рендеринга для bUnit тестов -->
+        @if (StateService.IsLoading)
+        {
+            <!-- 1. Loading State -->
+            <div data-testid="loading-state" class="d-flex justify-center align-center py-12">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+                <MudText Class="ml-4" Style="color: #666;">Loading fresh finds...</MudText>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(StateService.ErrorMessage))
+        {
+            <!-- 2. Error State -->
+            <div data-testid="error-state" class="py-8">
+                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="rounded-lg">
+                    @StateService.ErrorMessage
+                </MudAlert>
+            </div>
+        }
+        else if (!FilteredItems.Any())
+        {
+            <!-- 3. Empty State -->
+            <div data-testid="empty-state" class="text-center py-12">
+                <MudIcon Icon="@Icons.Material.Filled.SearchOff" Style="font-size: 48px; color: #888;" />
+                <MudText Typo="Typo.h6" Class="mt-2" Style="color: #666;">No items found matching your search.</MudText>
+            </div>
+        }
+        else
+        {
+            <!-- 4. Data State -->
+            <div data-testid="data-state">
+                <MudGrid>
+                    @foreach (var item in FilteredItems)
+                    {
+                        <MudItem xs="12" sm="6" md="3" @key="item.Id">
+                            <ListingCard Item="item" />
+                        </MudItem>
+                    }
+                </MudGrid>
+            </div>
+        }
+
+    </div>
+</div>
+
+@code {
+    private string selectedCategory = "All";
+    private List<string> categories = new() { "All", "Electronics", "Books", "Furniture", "Clothing", "Home", "Toys" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateService.LoadItemsAsync();
+    }
+
+    private IEnumerable<ListingItem> FilteredItems
+    {
+        get
+        {
+            var items = StateService.Items.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(StateService.SearchQuery))
+            {
+                items = items.Where(i => i.Title.Contains(StateService.SearchQuery, StringComparison.OrdinalIgnoreCase));
+            }
+            if (selectedCategory != "All")
+            {
+                items = items.Where(i => i.Category.Equals(selectedCategory, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return items;
+        }
+    }
+
+    private void SelectCategory(string category)
+    {
+        selectedCategory = category;
+    }
+
+    private string GetCategoryStyle(string category)
+    {
+        return selectedCategory == category
+            ? "background-color: #2D2B2A; color: white; font-weight: 600;"
+            : "background-color: #FFFFFF; color: #555; border: 1px solid #E5E0D8;";
+    }
+}
