@@ -24,17 +24,12 @@ public class ProfileTests
             context.Services.AddMudServices();
 
             var profileState = new ProfileStateService();
-
-            profileState.SetListings(
-                new List<ProfileListing>()
-            );
+            profileState.SetListings(new List<ProfileListing>());
 
             context.Services.AddSingleton(profileState);
 
-            // Act
             var cut = context.Render<Profile>();
 
-            // Assert
             Assert.NotNull(
                 cut.Find("[data-testid='empty-state']")
             );
@@ -61,22 +56,52 @@ public class ProfileTests
             context.Services.AddMudServices();
 
             var profileState = new ProfileStateService();
-
-            // Arrange: імітуємо завантаження
             profileState.SetLoading();
 
             context.Services.AddSingleton(profileState);
 
-            // Act
             var cut = context.Render<Profile>();
 
-            // Assert
             Assert.NotNull(
                 cut.Find("[data-testid='loading-state']")
             );
 
             Assert.Contains(
                 "Loading profile...",
+                cut.Markup
+            );
+        }
+        finally
+        {
+            await context.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Profile_ShouldRenderErrorState_WhenLoadingFails()
+    {
+        var context = new BunitContext();
+
+        try
+        {
+            context.JSInterop.Mode = JSRuntimeMode.Loose;
+            context.Services.AddMudServices();
+
+            var profileState = new ProfileStateService();
+
+            // Імітуємо помилку завантаження
+            profileState.SetError("Failed to load profile.");
+
+            context.Services.AddSingleton(profileState);
+
+            var cut = context.Render<Profile>();
+
+            Assert.NotNull(
+                cut.Find("[data-testid='error-state']")
+            );
+
+            Assert.Contains(
+                "Failed to load profile.",
                 cut.Markup
             );
         }
