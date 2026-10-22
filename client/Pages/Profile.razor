@@ -158,7 +158,7 @@
 
             @foreach (var item in listings.Where(x => x.Status == ListingStatus.Active))
             {
-                <MudPaper @key="item.Id"
+                <MudPaper data-testid="data-state" @key="item.Id"
                           Elevation="0"
                           Class="pa-4 mb-2"
                           Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 12px;">
@@ -394,7 +394,7 @@
 
             @foreach (var item in listings.Where(x => x.Status != ListingStatus.Active))
             {
-                <MudPaper @key="item.Id"
+                <MudPaper data-testid="data-state" @key="item.Id"
                           Elevation="0"
                           Class="pa-4 mb-2"
                           Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 12px;">
@@ -1012,6 +1012,7 @@
         listingError = "";
     }
 }
+
 
 
 
