@@ -125,6 +125,23 @@
         </MudPaper>
     }
 
+    <!-- PROFILE ERROR STATE -->
+
+    @if (ProfileState.State == client.Services.ProfileLoadState.Error)
+    {
+        <MudPaper Elevation="0"
+                  Class="pa-6 mt-4"
+                  Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 16px;">
+
+            <div data-testid="error-state">
+                <MudAlert Severity="Severity.Error">
+                    @ProfileState.ErrorMessage
+                </MudAlert>
+            </div>
+
+        </MudPaper>
+    }
+
     <!-- TABS -->
 
     <MudTabs Class="mt-6"
@@ -995,5 +1012,6 @@
         listingError = "";
     }
 }
+
 
 
