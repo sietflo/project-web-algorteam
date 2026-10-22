@@ -1,5 +1,6 @@
-
+﻿
 @page "/profile"
+@inject client.Services.ProfileStateService ProfileState
 @using MudBlazor
 @using System.Globalization
 
@@ -99,6 +100,48 @@
         </MudPaper>
     }
 
+    <!-- PROFILE LOADING STATE -->
+
+    @if (ProfileState.State == client.Services.ProfileLoadState.Loading)
+    {
+        <MudPaper Elevation="0"
+                  Class="pa-6 mt-4"
+                  Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 16px;">
+
+            <div data-testid="loading-state">
+                <MudStack Row="true"
+                          AlignItems="AlignItems.Center"
+                          Spacing="3">
+
+                    <MudProgressCircular Indeterminate="true"
+                                         Color="Color.Primary"
+                                         Size="Size.Small" />
+
+                    <MudText>Loading profile...</MudText>
+
+                </MudStack>
+            </div>
+
+        </MudPaper>
+    }
+
+    <!-- PROFILE ERROR STATE -->
+
+    @if (ProfileState.State == client.Services.ProfileLoadState.Error)
+    {
+        <MudPaper Elevation="0"
+                  Class="pa-6 mt-4"
+                  Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 16px;">
+
+            <div data-testid="error-state">
+                <MudAlert Severity="Severity.Error">
+                    @ProfileState.ErrorMessage
+                </MudAlert>
+            </div>
+
+        </MudPaper>
+    }
+
     <!-- TABS -->
 
     <MudTabs Class="mt-6"
@@ -115,7 +158,7 @@
 
             @foreach (var item in listings.Where(x => x.Status == ListingStatus.Active))
             {
-                <MudPaper @key="item.Id"
+                <MudPaper data-testid="data-state" @key="item.Id"
                           Elevation="0"
                           Class="pa-4 mb-2"
                           Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 12px;">
@@ -338,7 +381,7 @@
 
             @if (ActiveCount == 0)
             {
-                <MudText Class="pa-4" Style="color: #777777;">
+                <MudText data-testid="empty-state" Class="pa-4" Style="color: #777777;">
                     You have no active listings.
                 </MudText>
             }
@@ -351,7 +394,7 @@
 
             @foreach (var item in listings.Where(x => x.Status != ListingStatus.Active))
             {
-                <MudPaper @key="item.Id"
+                <MudPaper data-testid="data-state" @key="item.Id"
                           Elevation="0"
                           Class="pa-4 mb-2"
                           Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 12px;">
@@ -684,45 +727,32 @@
 
     // LISTINGS
 
-    private List<ProfileListing> listings = new()
+    private List<ProfileListing> listings = new();
+
+    protected override void OnInitialized()
     {
-        new ProfileListing
+        listings = ProfileState.Listings.Select(item => new ProfileListing
         {
-            Id = 1,
-            Name = "Heirloom Tomato Basket",
-            Price = 12m,
-            Description = "Fresh heirloom tomatoes from a local garden.",
-            Image = "/images/tomato-basket.png",
-            Posted = "Posted 2 days ago",
-            Views = 48,
-            Inquiries = 3
-        },
+            Id = item.Id,
+            Name = item.Name,
+            Price = item.Price,
+            Description = item.Description,
+            Image = item.Image,
+            Posted = item.Posted,
+            Views = item.Views,
+            Inquiries = item.Inquiries,
+            Status = item.Status switch
+            {
+                client.Services.ProfileListingStatus.Sold
+                    => ListingStatus.Sold,
 
-        new ProfileListing
-        {
-            Id = 2,
-            Name = "Walnut Floating Shelf",
-            Price = 38m,
-            Description = "Handmade walnut floating shelf in great condition.",
-            Image = "/images/walnut-shelf.png",
-            Posted = "Posted 5 days ago",
-            Views = 31,
-            Inquiries = 2
-        },
+                client.Services.ProfileListingStatus.Archived
+                    => ListingStatus.Archived,
 
-        new ProfileListing
-        {
-            Id = 3,
-            Name = "Linen Picnic Blanket",
-            Price = 24m,
-            Description = "Soft linen picnic blanket, perfect for outdoor use.",
-            Image = "/images/linen-blanket.png",
-            Posted = "Posted 1 week ago",
-            Views = 76,
-            Inquiries = 6
-        }
-    };
-
+                _ => ListingStatus.Active
+            }
+        }).ToList();
+    }
     // FAVORITES
 
     private List<FavoriteListing> favorites = new()
@@ -982,3 +1012,7 @@
         listingError = "";
     }
 }
+
+
+
+
