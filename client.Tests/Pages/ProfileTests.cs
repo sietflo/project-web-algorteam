@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -110,4 +110,48 @@ public class ProfileTests
             await context.DisposeAsync();
         }
     }
+
+    [Fact]
+    public async Task Profile_ShouldRenderDataState_WhenListingsExist()
+    {
+        var context = new BunitContext();
+
+        try
+        {
+            context.JSInterop.Mode = JSRuntimeMode.Loose;
+            context.Services.AddMudServices();
+
+            var profileState = new ProfileStateService();
+
+            profileState.SetListings(new List<ProfileListing>
+            {
+                new ProfileListing
+                {
+                    Id = 101,
+                    Name = "TDD Test Bicycle",
+                    Price = 150,
+                    Description = "Test listing",
+                    Status = ProfileListingStatus.Active
+                }
+            });
+
+            context.Services.AddSingleton(profileState);
+
+            var cut = context.Render<Profile>();
+
+            Assert.NotNull(
+                cut.Find("[data-testid='data-state']")
+            );
+
+            Assert.Contains(
+                "TDD Test Bicycle",
+                cut.Markup
+            );
+        }
+        finally
+        {
+            await context.DisposeAsync();
+        }
+    }
 }
+
