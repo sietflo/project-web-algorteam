@@ -1,12 +1,11 @@
 ﻿@page "/"
+@inject IJSRuntime JSRuntime
 @inject client.Services.ListingStateService StateService
 
 <PageTitle>NearBuy - Find what you need nearby</PageTitle>
 
-<!-- Верхний баннер (Hero Section) -->
 <div style="max-width: 1200px; margin: 0 auto; padding-top: 48px; padding-bottom: 48px;" class="px-4">
     <MudGrid Class="align-center">
-        <!-- Левый текстовый блок -->
         <MudItem xs="12" md="5" Class="pr-md-4">
             <div style="display: inline-flex; align-items: center; gap: 6px; background-color: #E2EFE7; color: #3A694B; font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 16px;" class="mb-4">
                 <span style="font-size: 10px;">●</span> Your neighborhood marketplace
@@ -22,6 +21,7 @@
             
             <div class="d-flex align-center gap-4">
                 <MudButton Variant="Variant.Filled" 
+                           OnClick="ScrollToRecentlyListed"
                            Style="background-color: #DE5844; color: white; border-radius: 24px; text-transform: none; padding: 10px 24px; font-weight: 600; box-shadow: none;">
                     Browse NearBuy
                 </MudButton>
@@ -30,8 +30,6 @@
                 </MudText>
             </div>
         </MudItem>
-
-        <!-- Правый блок с фото и карточкой расстояния -->
         <MudItem xs="12" md="7">
             <div style="display: flex; gap: 16px; align-items: flex-start; justify-content: flex-end; position: relative;">
                 <div style="flex: 2; height: 320px; border-radius: 24px; overflow: hidden;">
@@ -57,11 +55,8 @@
     </MudGrid>
 </div>
 
-<!-- Блок каталога с цветным фоном -->
-<div style="background-color: #F0EADF; width: 100%; padding-top: 48px; padding-bottom: 64px;">
+<div id="recently-listed" style="background-color: #F0EADF; width: 100%; padding-top: 48px; padding-bottom: 64px;">
     <div style="max-width: 1200px; margin: 0 auto;" class="px-4">
-        
-        <!-- Заголовок секции -->
         <div class="d-flex align-center justify-space-between mb-4">
             <div>
                 <MudText Typo="Typo.caption" Style="color: #DE5844; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">
@@ -75,8 +70,6 @@
                 Updated today • @FilteredItems.Count() local finds
             </MudText>
         </div>
-
-        <!-- Фильтры категорий -->
         <div class="d-flex align-center gap-2 mb-6" style="overflow-x: auto;">
             @foreach (var category in categories)
             {
@@ -88,11 +81,8 @@
                 </MudChip>
             }
         </div>
-
-        <!-- 4 состояния рендеринга для bUnit тестов -->
         @if (StateService.IsLoading)
         {
-            <!-- 1. Loading State -->
             <div data-testid="loading-state" class="d-flex justify-center align-center py-12">
                 <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
                 <MudText Class="ml-4" Style="color: #666;">Loading fresh finds...</MudText>
@@ -100,7 +90,6 @@
         }
         else if (!string.IsNullOrEmpty(StateService.ErrorMessage))
         {
-            <!-- 2. Error State -->
             <div data-testid="error-state" class="py-8">
                 <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="rounded-lg">
                     @StateService.ErrorMessage
@@ -109,7 +98,6 @@
         }
         else if (!FilteredItems.Any())
         {
-            <!-- 3. Empty State -->
             <div data-testid="empty-state" class="text-center py-12">
                 <MudIcon Icon="@Icons.Material.Filled.SearchOff" Style="font-size: 48px; color: #888;" />
                 <MudText Typo="Typo.h6" Class="mt-2" Style="color: #666;">No items found matching your search.</MudText>
@@ -117,7 +105,6 @@
         }
         else
         {
-            <!-- 4. Data State -->
             <div data-testid="data-state">
                 <MudGrid>
                     @foreach (var item in FilteredItems)
@@ -140,6 +127,11 @@
     protected override async Task OnInitializedAsync()
     {
         await StateService.LoadItemsAsync();
+    }
+
+    private async Task ScrollToRecentlyListed()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('recently-listed')?.scrollIntoView({ behavior: 'smooth' })");
     }
 
     private IEnumerable<ListingItem> FilteredItems
