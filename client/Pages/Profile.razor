@@ -142,8 +142,20 @@
         </MudPaper>
     }
 
-    <!-- TABS -->
+    <!-- EMPTY STATE -->
 
+    @if (ProfileState.State == client.Services.ProfileLoadState.Empty)
+    {
+        <MudPaper Elevation="0" Class="pa-6 mt-4"
+                  Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 16px;">
+            <MudText data-testid="empty-state">You have no active listings.</MudText>
+        </MudPaper>
+    }
+
+    <!-- TABS: show listings only when data has loaded successfully -->
+
+    @if (ProfileState.State == client.Services.ProfileLoadState.Data)
+    {
     <MudTabs Class="mt-6"
              Rounded="false"
              Color="Color.Default"
@@ -641,6 +653,7 @@
         </MudTabPanel>
 
     </MudTabs>
+    }
 
 </MudContainer>
 
