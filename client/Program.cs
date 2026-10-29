@@ -19,5 +19,6 @@ builder.Services.AddMudServices();
 
 builder.Services.AddScoped<ListingStateService>();
 builder.Services.AddScoped<ProfileStateService>();
+builder.Services.AddScoped<ProfileApiService>();
 
 await builder.Build().RunAsync();
