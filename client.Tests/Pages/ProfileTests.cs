@@ -1,11 +1,13 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Bunit;
 using Xunit;
 using client.Pages;
 using client.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
 
@@ -18,8 +20,27 @@ public class ProfileTests
         var context = new BunitContext();
 
         context.JSInterop.Mode = JSRuntimeMode.Loose;
+
         context.Services.AddMudServices();
         context.Services.AddSingleton(profileState);
+
+        // Test configuration: use local data instead of real API
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ProfileApi:Enabled"] = "false",
+                ["ProfileApi:BaseUrl"] = ""
+            })
+            .Build();
+
+        context.Services.AddSingleton<IConfiguration>(configuration);
+
+        // Register the API service required by Profile.razor
+        context.Services.AddScoped<ProfileApiService>(_ =>
+            new ProfileApiService(new HttpClient
+            {
+                BaseAddress = new Uri("http://localhost:5000/")
+            }));
 
         return context;
     }
@@ -135,7 +156,6 @@ public class ProfileTests
         }
     }
 
-    // NEW TEST 1:
     // Loading must not display listings or error/empty states.
 
     [Fact]
@@ -176,7 +196,6 @@ public class ProfileTests
         }
     }
 
-    // NEW TEST 2:
     // Error must not display listings or other states.
 
     [Fact]
@@ -222,7 +241,6 @@ public class ProfileTests
         }
     }
 
-    // NEW TEST 3:
     // Empty must not display data, loading or error.
 
     [Fact]
@@ -259,7 +277,6 @@ public class ProfileTests
         }
     }
 
-    // NEW TEST 4:
     // Data must not display loading, error or empty.
 
     [Fact]

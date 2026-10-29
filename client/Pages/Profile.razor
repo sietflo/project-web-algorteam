@@ -1,6 +1,8 @@
 ﻿
 @page "/profile"
 @inject client.Services.ProfileStateService ProfileState
+@inject client.Services.ProfileApiService ProfileApi
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @using MudBlazor
 @using System.Globalization
 
@@ -742,7 +744,40 @@
 
     private List<ProfileListing> listings = new();
 
-    protected override void OnInitialized()
+   
+    protected override async Task OnInitializedAsync()
+    {
+        var apiEnabled =
+            Configuration.GetValue<bool>("ProfileApi:Enabled");
+
+        if (!apiEnabled)
+        {
+            LoadListingsFromState();
+            return;
+        }
+
+        ProfileState.SetLoading();
+
+        try
+        {
+            var apiListings = await ProfileApi.GetListingsAsync();
+
+            ProfileState.SetListings(apiListings);
+            LoadListingsFromState();
+        }
+        catch (HttpRequestException)
+        {
+            ProfileState.SetError(
+                "Could not load listings from the server. Please try again later.");
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            ProfileState.SetError(
+                "The server returned invalid listing data.");
+        }
+    }
+
+    private void LoadListingsFromState()
     {
         listings = ProfileState.Listings.Select(item => new ProfileListing
         {
@@ -766,7 +801,7 @@
             }
         }).ToList();
     }
-    // FAVORITES
+
 
     private List<FavoriteListing> favorites = new()
     {
