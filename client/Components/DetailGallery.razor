@@ -1,0 +1,55 @@
+<div>
+    <div style="width: 100%; height: 420px; border-radius: 16px; overflow: hidden; background-color: #F0EADF;">
+        @if (!string.IsNullOrEmpty(MainImage))
+        {
+            <img data-testid="gallery-main-image"
+                 src="@MainImage"
+                 alt="@Title"
+                 style="width: 100%; height: 100%; object-fit: cover;" />
+        }
+    </div>
+
+    @if (Photos.Count > 1)
+    {
+        <div class="d-flex gap-2 mt-3" style="overflow-x: auto;">
+            @foreach (var url in Photos)
+            {
+                <img @key="url"
+                     data-testid="gallery-thumb"
+                     src="@url"
+                     alt="@Title"
+                     @onclick="() => Select(url)"
+                     style="@ThumbStyle(url)" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<string> Images { get; set; } = new();
+
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> OnSelected { get; set; }
+
+    private string? selectedImage;
+
+    private List<string> Photos => Images.Distinct().ToList();
+
+    private string? MainImage => selectedImage ?? Photos.FirstOrDefault();
+
+    private async Task Select(string url)
+    {
+        selectedImage = url;
+        await OnSelected.InvokeAsync(url);
+    }
+
+    private string ThumbStyle(string url)
+    {
+        var border = url == MainImage ? "#DE5844" : "transparent";
+        return $"width: 72px; height: 72px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 2px solid {border};";
+    }
+}

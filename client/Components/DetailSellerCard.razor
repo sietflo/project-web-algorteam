@@ -1,0 +1,34 @@
+<MudPaper Elevation="0" Class="pa-4 mt-4" Style="background-color: #FFFFFF; border: 1px solid #ECE8DE; border-radius: 16px;">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+        <MudAvatar Size="Size.Large" Style="background-color: #F0EADF; color: #2D2B2A;">
+            @if (!string.IsNullOrWhiteSpace(Seller.AvatarUrl))
+            {
+                <img src="@Seller.AvatarUrl" alt="@Seller.Name" />
+            }
+            else
+            {
+                <span>@Initial</span>
+            }
+        </MudAvatar>
+
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">
+                @Seller.Name
+                @if (Seller.IsVerified)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Verified" Size="Size.Small" Style="color: #3A694B; vertical-align: middle;" />
+                }
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: #777;">
+                @Seller.Rating.ToString("0.0") ★ · @Seller.ItemsSoldCount items sold · Member since @Seller.MemberSinceYear
+            </MudText>
+        </MudStack>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired]
+    public Seller Seller { get; set; } = new();
+
+    private string Initial => string.IsNullOrWhiteSpace(Seller.Name) ? "?" : Seller.Name[..1];
+}
