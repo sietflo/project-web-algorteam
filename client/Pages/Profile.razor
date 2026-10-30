@@ -1,6 +1,8 @@
-﻿
+
 @page "/profile"
 @inject client.Services.ProfileStateService ProfileState
+@inject client.Services.ProfileApiService ProfileApi
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @using MudBlazor
 @using System.Globalization
 
@@ -142,8 +144,20 @@
         </MudPaper>
     }
 
-    <!-- TABS -->
+    <!-- EMPTY STATE -->
 
+    @if (ProfileState.State == client.Services.ProfileLoadState.Empty)
+    {
+        <MudPaper Elevation="0" Class="pa-6 mt-4"
+                  Style="background-color: white; border: 1px solid #ECE8DE; border-radius: 16px;">
+            <MudText data-testid="empty-state">You have no active listings.</MudText>
+        </MudPaper>
+    }
+
+    <!-- TABS: show listings only when data has loaded successfully -->
+
+    @if (ProfileState.State == client.Services.ProfileLoadState.Data)
+    {
     <MudTabs Class="mt-6"
              Rounded="false"
              Color="Color.Default"
@@ -641,6 +655,7 @@
         </MudTabPanel>
 
     </MudTabs>
+    }
 
 </MudContainer>
 
@@ -729,7 +744,40 @@
 
     private List<ProfileListing> listings = new();
 
-    protected override void OnInitialized()
+   
+    protected override async Task OnInitializedAsync()
+    {
+        var apiEnabled =
+            Configuration.GetValue<bool>("ProfileApi:Enabled");
+
+        if (!apiEnabled)
+        {
+            LoadListingsFromState();
+            return;
+        }
+
+        ProfileState.SetLoading();
+
+        try
+        {
+            var apiListings = await ProfileApi.GetListingsAsync();
+
+            ProfileState.SetListings(apiListings);
+            LoadListingsFromState();
+        }
+        catch (HttpRequestException)
+        {
+            ProfileState.SetError(
+                "Could not load listings from the server. Please try again later.");
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            ProfileState.SetError(
+                "The server returned invalid listing data.");
+        }
+    }
+
+    private void LoadListingsFromState()
     {
         listings = ProfileState.Listings.Select(item => new ProfileListing
         {
@@ -753,7 +801,7 @@
             }
         }).ToList();
     }
-    // FAVORITES
+
 
     private List<FavoriteListing> favorites = new()
     {
@@ -833,15 +881,28 @@
 
     // MARK AS SOLD
 
-    private void MarkAsSold(int id)
+    private async Task MarkAsSold(int id)
     {
         var item = listings.FirstOrDefault(x => x.Id == id);
-
-        if (item == null || item.Status != ListingStatus.Active)
-            return;
-
+        if (item == null || item.Status != ListingStatus.Active) return;
+        if (Configuration.GetValue<bool>("ProfileApi:Enabled"))
+        {
+            try
+            {
+                await ProfileApi.MarkAsSoldAsync(new client.Services.ProfileListing
+                {
+                    Id = item.Id, Name = item.Name, Price = item.Price,
+                    Description = item.Description, Image = item.Image,
+                    Status = client.Services.ProfileListingStatus.Sold
+                });
+            }
+            catch (HttpRequestException)
+            {
+                listingError = "Could not update listing on the server.";
+                return;
+            }
+        }
         item.Status = ListingStatus.Sold;
-
         CloseAllPanels();
     }
 
@@ -882,8 +943,10 @@
         editedListingDescription = item.Description;
     }
 
-    private void SaveListing()
+    private async Task SaveListing()
     {
+        listingError = "";
+
         if (string.IsNullOrWhiteSpace(editedListingName))
         {
             listingError = "Please enter an item name.";
@@ -904,9 +967,33 @@
             return;
         }
 
-        item.Name = editedListingName.Trim();
+        var newName = editedListingName.Trim();
+        var newDescription = (editedListingDescription ?? "").Trim();
+
+        if (Configuration.GetValue<bool>("ProfileApi:Enabled"))
+        {
+            try
+            {
+                await ProfileApi.UpdateListingAsync(new client.Services.ProfileListing
+                {
+                    Id = item.Id,
+                    Name = newName,
+                    Price = editedListingPrice,
+                    Description = newDescription,
+                    Image = item.Image,
+                    Status = (client.Services.ProfileListingStatus)(int)item.Status
+                });
+            }
+            catch (HttpRequestException)
+            {
+                listingError = "Could not save changes to the server.";
+                return;
+            }
+        }
+
+        item.Name = newName;
         item.Price = editedListingPrice;
-        item.Description = editedListingDescription.Trim();
+        item.Description = newDescription;
 
         CancelEditListing();
     }
@@ -919,12 +1006,35 @@
 
     // ARCHIVE LISTING
 
-    private void ArchiveListing(int id)
+    private async Task ArchiveListing(int id)
     {
         var item = listings.FirstOrDefault(x => x.Id == id);
 
         if (item == null || item.Status != ListingStatus.Active)
             return;
+
+        listingError = "";
+
+        if (Configuration.GetValue<bool>("ProfileApi:Enabled"))
+        {
+            try
+            {
+                await ProfileApi.UpdateListingAsync(new client.Services.ProfileListing
+                {
+                    Id = item.Id,
+                    Name = item.Name,
+                    Price = item.Price,
+                    Description = item.Description,
+                    Image = item.Image,
+                    Status = client.Services.ProfileListingStatus.Archived
+                });
+            }
+            catch (HttpRequestException)
+            {
+                listingError = "Could not archive listing on the server.";
+                return;
+            }
+        }
 
         item.Status = ListingStatus.Archived;
         CloseAllPanels();
@@ -932,12 +1042,35 @@
 
     // RESTORE LISTING
 
-    private void RestoreListing(int id)
+    private async Task RestoreListing(int id)
     {
         var item = listings.FirstOrDefault(x => x.Id == id);
 
         if (item == null || item.Status != ListingStatus.Archived)
             return;
+
+        listingError = "";
+
+        if (Configuration.GetValue<bool>("ProfileApi:Enabled"))
+        {
+            try
+            {
+                await ProfileApi.UpdateListingAsync(new client.Services.ProfileListing
+                {
+                    Id = item.Id,
+                    Name = item.Name,
+                    Price = item.Price,
+                    Description = item.Description,
+                    Image = item.Image,
+                    Status = client.Services.ProfileListingStatus.Active
+                });
+            }
+            catch (HttpRequestException)
+            {
+                listingError = "Could not restore listing on the server.";
+                return;
+            }
+        }
 
         item.Status = ListingStatus.Active;
         CloseAllPanels();
@@ -951,16 +1084,32 @@
         deletingListingId = id;
     }
 
-    private void ConfirmDelete()
+    private async Task ConfirmDelete()
     {
         if (deletingListingId == null)
             return;
 
         var item = listings.FirstOrDefault(x => x.Id == deletingListingId);
 
-        if (item != null)
-            listings.Remove(item);
+        if (item == null)
+            return;
 
+        listingError = "";
+
+        if (Configuration.GetValue<bool>("ProfileApi:Enabled"))
+        {
+            try
+            {
+                await ProfileApi.DeleteListingAsync(item.Id);
+            }
+            catch (HttpRequestException)
+            {
+                listingError = "Could not delete listing on the server.";
+                return;
+            }
+        }
+
+        listings.Remove(item);
         CloseAllPanels();
     }
 
