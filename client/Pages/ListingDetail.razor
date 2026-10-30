@@ -1,8 +1,133 @@
 @page "/listings/{id:int}"
+@inject client.Services.ListingStateService StateService
 
-<MudText Typo="Typo.h4">Listing Details for ID: @Id</MudText>
+@{
+    var item = StateService.GetById(Id);
+}
+
+<PageTitle>@(item is null ? "Listing" : item.Title) - NearBuy</PageTitle>
+
+<div style="max-width: 1200px; margin: 0 auto; padding-top: 32px; padding-bottom: 64px;" class="px-4">
+    <MudButton Href="/"
+               Variant="Variant.Text"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               Style="text-transform: none; color: #555;"
+               Class="mb-4">
+        Back to listings
+    </MudButton>
+
+    @if (StateService.IsLoading)
+    {
+        <div data-testid="loading-state" class="d-flex justify-center align-center py-12">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            <MudText Class="ml-4" Style="color: #666;">Loading listing...</MudText>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(StateService.ErrorMessage))
+    {
+        <div data-testid="error-state" class="py-8">
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="rounded-lg">
+                @StateService.ErrorMessage
+            </MudAlert>
+        </div>
+    }
+    else if (item is null)
+    {
+        <div data-testid="empty-state" class="text-center py-12">
+            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Style="font-size: 48px; color: #888;" />
+            <MudText Typo="Typo.h6" Class="mt-2" Style="color: #666;">Listing not found.</MudText>
+        </div>
+    }
+    else
+    {
+        <div data-testid="data-state">
+            <MudGrid Spacing="4">
+                <MudItem xs="12" md="7">
+                    <DetailGallery @key="item.Id" Images="item.ImageUrls" Title="@item.Title" />
+                </MudItem>
+
+                <MudItem xs="12" md="5">
+                    <MudPaper Elevation="0" Class="pa-6" Style="background-color: #FFFFFF; border: 1px solid #ECE8DE; border-radius: 16px;">
+                        <div class="d-flex align-center justify-space-between mb-2">
+                            <MudChip T="string" Size="Size.Small" Style="background-color: #F4F0E8; color: #666;">
+                                @item.Category
+                            </MudChip>
+                            <MudChip T="string" Size="Size.Small" Style="@StatusStyle(item.Status)">
+                                @item.Status
+                            </MudChip>
+                        </div>
+
+                        <MudText Typo="Typo.h4" Style="font-weight: 800; color: #1E1E1E; line-height: 1.2;">
+                            @item.Title
+                        </MudText>
+                        <MudText Typo="Typo.h5" Style="font-weight: 700; color: #DE5844;" Class="mt-1">
+                            $@item.Price
+                        </MudText>
+
+                        <div class="d-flex align-center mt-3" style="color: #777;">
+                            <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" />
+                            <MudText Typo="Typo.body2" Class="ml-1">@item.Location</MudText>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(item.Condition))
+                        {
+                            <MudText Typo="Typo.body2" Class="mt-2">Condition: @item.Condition</MudText>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(item.PickupNote))
+                        {
+                            <MudText Typo="Typo.body2" Class="mt-2" Style="color: #777;">@item.PickupNote</MudText>
+                        }
+                    </MudPaper>
+
+                    <DetailSellerCard Seller="item.Seller" />
+
+                    <ContactSellerForm SellerName="@item.Seller.Name" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudPaper Elevation="0" Class="pa-6" Style="background-color: #FFFFFF; border: 1px solid #ECE8DE; border-radius: 16px;">
+                        <MudText Typo="Typo.h6" Class="mb-2">Description</MudText>
+                        <MudText Typo="Typo.body1" Style="color: #444; line-height: 1.6;">@item.Description</MudText>
+
+                        <MudDivider Class="my-4" />
+
+                        @foreach (var (label, text) in DetailRows(item))
+                        {
+                            <div @key="label" class="d-flex justify-space-between py-2" style="border-bottom: 1px solid #F0EADF;">
+                                <MudText Typo="Typo.body2" Style="color: #777;">@label</MudText>
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">@text</MudText>
+                            </div>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </div>
+    }
+</div>
 
 @code {
     [Parameter]
     public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StateService.LoadItemsAsync();
+    }
+
+    private static string StatusStyle(string status) => status == "Available"
+        ? "background-color: #E2EFE7; color: #3A694B;"
+        : "background-color: #F4F0E8; color: #666;";
+
+    private static IEnumerable<(string Label, string Text)> DetailRows(ListingItem item)
+    {
+        var rows = new (string Label, string Text)[]
+        {
+            ("Material", item.Details.Material),
+            ("Dimensions", item.Details.Dimensions),
+            ("Style", item.Details.Style),
+            ("Posted", item.Details.PostedTimeAgo)
+        };
+
+        return rows.Where(r => !string.IsNullOrWhiteSpace(r.Text));
+    }
 }

@@ -1,0 +1,81 @@
+@using System.Globalization
+
+<MudPaper Elevation="0" Class="pa-6 mt-4" Style="background-color: #FFFFFF; border: 1px solid #ECE8DE; border-radius: 16px;">
+    <MudText Typo="Typo.h6" Class="mb-3">Message the seller</MudText>
+
+    @if (isSent)
+    {
+        <div data-testid="contact-success">
+            <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Class="rounded-lg">
+                Message sent to @(SellerName).
+                @if (model.OfferPrice is not null)
+                {
+                    <span>Your offer: $@(model.OfferPrice?.ToString(CultureInfo.CurrentCulture))</span>
+                }
+            </MudAlert>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="model" OnValidSubmit="Send" data-testid="contact-form">
+            <DataAnnotationsValidator />
+
+            <MudStack Spacing="2">
+                <MudTextField @bind-Value="model.Name"
+                              For="@(() => model.Name)"
+                              Label="Your name"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              data-testid="name-field" />
+
+                <MudTextField @bind-Value="model.Email"
+                              For="@(() => model.Email)"
+                              Label="Email"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              data-testid="email-field" />
+
+                <MudTextField @bind-Value="model.Message"
+                              For="@(() => model.Message)"
+                              Label="Message"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Lines="3"
+                              data-testid="message-field" />
+
+                <MudNumericField T="decimal?"
+                                 Culture="@CultureInfo.CurrentCulture"
+                                 @bind-Value="model.OfferPrice"
+                                 For="@(() => model.OfferPrice)"
+                                 Label="Your offer, $ (optional)"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 HideSpinButtons="true"
+                                 data-testid="offer-price" />
+
+                <MudButton ButtonType="ButtonType.Submit"
+                           Variant="Variant.Filled"
+                           Style="background-color: #DE5844; color: white; border-radius: 20px; text-transform: none; font-weight: 600; box-shadow: none;">
+                    Send message
+                </MudButton>
+            </MudStack>
+        </EditForm>
+    }
+</MudPaper>
+
+@code {
+    [Parameter]
+    public string SellerName { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<ContactSellerModel> OnSent { get; set; }
+
+    private readonly ContactSellerModel model = new();
+    private bool isSent;
+
+    private async Task Send()
+    {
+        isSent = true;
+        await OnSent.InvokeAsync(model);
+    }
+}
