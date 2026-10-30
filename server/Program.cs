@@ -10,15 +10,18 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5042", "https://localhost:7112") // Порти Blazor-клієнта
+        policy.WithOrigins("http://localhost:5042", "https://localhost:7134") // Порти Blazor-клієнта (client/Properties/launchSettings.json)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });
 });
 
-// Додаємо підтримку OpenAPI
-builder.Services.AddOpenApi();
+// Додаємо підтримку OpenAPI, ProblemDetails і валідації
+builder.Services.AddProblemDetails().AddValidation().AddOpenApi();
+
+// Сховище оголошень (в пам'яті)
+builder.Services.AddSingleton<ListingStore>();
 
 var app = builder.Build();
 
@@ -27,6 +30,13 @@ var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("Ініціалізація сервера NearBuy API...");
 
 // Настройка HTTP-пайплайна
+// Лог кожного запиту: метод, шлях, код і тривалість
+app.UseMiddleware<RequestLog>();
+
+// Помилки й коди відповіді повертаються як ProblemDetails
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -48,6 +58,12 @@ app.MapGet("/health", (ILogger<Program> log) =>
 })
 .WithName("HealthCheck");
 
+// Оголошення: /api/listings
+app.MapListings();
+
 logger.LogInformation("Сервер успішно запущений!");
 
 app.Run();
+
+// Потрібно, щоб інтеграційні тести могли запустити сервер
+public partial class Program;
