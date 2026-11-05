@@ -19,3 +19,53 @@ Login / Register — basic auth
 main — stable, demo-ready state  
 dev — active integration branch  
 feature/<short-desc> — one branch per task, merged into dev via reviewed MR  
+
+# Data Base ER-diagram
+```mermaid
+erDiagram
+    USER ||--o{ LISTING : "creates"
+    CATEGORY ||--o{ LISTING : "contains"
+    LISTING ||--o{ LISTING_IMAGE : "has"
+
+    USER {
+        int Id PK
+        string Name
+        string Email UK
+        string AvatarUrl
+        double Rating
+        int ItemsSoldCount
+        int MemberSinceYear
+        bool IsVerified
+    }
+
+    CATEGORY {
+        int Id PK
+        string Name UK
+    }
+
+    LISTING {
+        int Id PK
+        string Title
+        decimal Price
+        string Description
+        enum Status
+        string Location
+        string Condition
+        string PickupNote
+        int Views
+        int Inquiries
+        datetime CreatedAtUtc
+        string Material
+        string Dimensions
+        string Style
+        int UserId FK
+        int CategoryId FK
+    }
+
+    LISTING_IMAGE {
+        int Id PK
+        string Url
+        bool IsMain
+        int ListingId FK
+    }
+```
