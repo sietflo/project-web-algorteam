@@ -1,0 +1,54 @@
+﻿name: NearBuy Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/listings-db-api]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: nearbuy_test
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: nearbuy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nearbuy_test -d nearbuy_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=nearbuy_test;Username=nearbuy_test;Password=test_password"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef --version 10.0.14
+
+      - name: Restore server dependencies
+        run: dotnet restore server/server.csproj
+
+      - name: Apply database migrations
+        run: dotnet ef database update --project server/server.csproj --startup-project server/server.csproj
+
+      - name: Run server tests
+        run: dotnet test server.Tests/server.Tests.csproj
+
+      - name: Run client tests
+        run: dotnet test client.Tests/client.Tests.csproj
+

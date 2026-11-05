@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using server.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Конфігурація логування (в консоль і дебаггер)
@@ -20,10 +23,24 @@ builder.Services.AddCors(options =>
 // Додаємо підтримку OpenAPI, ProblemDetails і валідації
 builder.Services.AddProblemDetails().AddValidation().AddOpenApi();
 
-// Сховище оголошень (в пам'яті)
-builder.Services.AddSingleton<ListingStore>();
+// Підключення PostgreSQL через Entity Framework Core
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("Database connection string is missing.");
+
+    options.UseNpgsql(connectionString);
+});
+
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await DevelopmentDataSeeder.SeedAsync(db);
+}
 
 // Логер для відслідковування старту сервера
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
