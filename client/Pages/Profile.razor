@@ -1,4 +1,7 @@
 
+
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @page "/profile"
 @inject client.Services.ProfileStateService ProfileState
 @inject client.Services.ProfileApiService ProfileApi

@@ -1,6 +1,7 @@
 
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Authentication.WebAssembly.Msal.Models;
 using MudBlazor.Services;
 using client;
 using client.Services;
@@ -14,6 +15,17 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(sp => new HttpClient
 {
     BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+});
+
+// Microsoft Entra ID authentication
+builder.Services.AddMsalAuthentication(options =>
+{
+    builder.Configuration.Bind("AzureAd", options.ProviderOptions.Authentication);
+
+    options.ProviderOptions.DefaultAccessTokenScopes.Add(
+        "api://6b99ada1-1ca0-4f7f-9a81-86cf13b17134/access_as_user");
+
+    options.UserOptions.RoleClaim = "roles";
 });
 
 // Profile API configuration
