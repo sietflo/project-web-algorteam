@@ -1,5 +1,7 @@
-﻿@inherits LayoutComponentBase
+﻿
+@inherits LayoutComponentBase
 @implements IDisposable
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @inject client.Services.ListingStateService StateService
 
 <MudThemeProvider />
@@ -8,7 +10,9 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="0" Style="background-color: #F8F6F0; border-bottom: 1px solid #ECE8DE;" Class="px-6">
+    <MudAppBar Elevation="0"
+               Style="background-color: #F8F6F0; border-bottom: 1px solid #ECE8DE;"
+               Class="px-6">
 
         <NearBuyLogo Height="36" OnClick="NavHome" />
 
@@ -28,27 +32,46 @@
 
         <MudSpacer />
 
-        @if (StateService.IsAuthenticated)
-        {
-            <MudButton Href="/profile" Variant="Variant.Text" Color="Color.Dark" Class="mr-2" Style="text-transform: none;">
-                @StateService.CurrentUserName
-            </MudButton>
-        }
-        else
-        {
-            <MudButton Variant="Variant.Text" Color="Color.Dark" OnClick='() => StateService.Login("Maya R.")' Class="mr-3" Style="text-transform: none;">
-                Sign In
-            </MudButton>
-        }
+        <AuthorizeView>
+            <Authorized Context="auth">
+                <MudButton Href="/profile"
+                           Variant="Variant.Text"
+                           Color="Color.Dark"
+                           Class="mr-2"
+                           Style="text-transform: none;">
+                    @auth.User.Identity?.Name
+                </MudButton>
 
-        <MudButton Variant="Variant.Filled" 
-                Style="background-color: #DE5844; color: white; border-radius: 20px; text-transform: none; font-weight: 500;" 
-                Href="/post-item">
+                <MudButton OnClick="Logout"
+                           Variant="Variant.Text"
+                           Color="Color.Dark"
+                           Class="mr-3"
+                           Style="text-transform: none;">
+                    Sign Out
+                </MudButton>
+            </Authorized>
+
+            <NotAuthorized>
+                <MudButton Href="/authentication/login"
+                           Variant="Variant.Text"
+                           Color="Color.Dark"
+                           Class="mr-3"
+                           Style="text-transform: none;">
+                    Sign In
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+
+        <MudButton Variant="Variant.Filled"
+                   Style="background-color: #DE5844; color: white; border-radius: 20px; text-transform: none; font-weight: 500;"
+                   Href="/post-item">
             + Post an item
         </MudButton>
+
     </MudAppBar>
 
-    <MudMainContent Style="background-color: #FAF8F5; min-height: 100vh;" Class="d-flex flex-column justify-space-between">
+    <MudMainContent Style="background-color: #FAF8F5; min-height: 100vh;"
+                    Class="d-flex flex-column justify-space-between">
         <div>
             @Body
         </div>
@@ -57,7 +80,8 @@
 </MudLayout>
 
 @code {
-    [Inject] private NavigationManager NavManager { get; set; } = default!;
+    [Inject]
+    private NavigationManager NavManager { get; set; } = default!;
 
     protected override void OnInitialized()
     {
@@ -69,5 +93,13 @@
         StateService.OnChange -= StateHasChanged;
     }
 
-    private void NavHome() => NavManager.NavigateTo("/");
+    private void NavHome()
+    {
+        NavManager.NavigateTo("/");
+    }
+
+    private void Logout()
+    {
+        NavManager.NavigateToLogout("authentication/logout");
+    }
 }
