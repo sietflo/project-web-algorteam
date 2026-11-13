@@ -69,3 +69,15 @@ erDiagram
         int ListingId FK
     }
 ```
+
+# Authentication (Microsoft Entra ID)
+
+- **Tenant ID:** `70a28522-969b-451f-bdb2-abfea3aaa5bf`
+- **Client App ID:** `85b29288-c033-4ba4-abff-e6fb49a2ee6e`
+- **API App ID:** `6b99ada1-1ca0-4f7f-9a81-86cf13b17134`
+- **Scope:** `api://6b99ada1-1ca0-4f7f-9a81-86cf13b17134/access_as_user`
+
+# Verification Screenshots
+- [API Scope (`access_as_user`)](docs/entra-id/1a-api-scope.png)
+- [App Roles (`User`, `Admin`)](docs/entra-id/1b-app-roles.png)
+- [Role Assignments](docs/entra-id/1c-user-assignments.png)
