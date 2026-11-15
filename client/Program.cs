@@ -1,5 +1,6 @@
 
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Authentication.WebAssembly.Msal.Models;
 using MudBlazor.Services;
@@ -37,15 +38,24 @@ var profileApiBaseUrl =
 
 builder.Services.AddScoped<ProfileApiService>(sp =>
 {
-    var httpClient = new HttpClient
+    if (profileApiEnabled && !string.IsNullOrWhiteSpace(profileApiBaseUrl))
     {
-        BaseAddress = profileApiEnabled &&
-                      !string.IsNullOrWhiteSpace(profileApiBaseUrl)
-            ? new Uri(profileApiBaseUrl)
-            : new Uri(builder.HostEnvironment.BaseAddress)
-    };
+        var handler = sp.GetRequiredService<AuthorizationMessageHandler>()
+            .ConfigureHandler(
+                authorizedUrls: new[] { profileApiBaseUrl },
+                scopes: new[] { "api://6b99ada1-1ca0-4f7f-9a81-86cf13b17134/access_as_user" }
+            );
 
-    return new ProfileApiService(httpClient);
+        return new ProfileApiService(new HttpClient(handler)
+        {
+            BaseAddress = new Uri(profileApiBaseUrl)
+        });
+    }
+
+    return new ProfileApiService(new HttpClient
+    {
+        BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+    });
 });
 
 builder.Services.AddMudServices();
