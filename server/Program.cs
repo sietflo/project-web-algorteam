@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Web;
 using server.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +22,34 @@ builder.Services.AddCors(options =>
     });
 });
 
+// 3. Аутентифікація та політики авторизації (Microsoft Entra ID — Блок 3)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(options =>
+    {
+        builder.Configuration.Bind("AzureAd", options);
+        options.TokenValidationParameters.ValidAudiences = new[]
+        {
+            "6b99ada1-1ca0-4f7f-9a81-86cf13b17134",
+            "api://6b99ada1-1ca0-4f7f-9a81-86cf13b17134"
+        };
+    },
+    options => { builder.Configuration.Bind("AzureAd", options); });
+
+builder.Services.AddAuthorizationBuilder()
+    // 3а: Читання вимагає scope access_as_user
+    .AddPolicy("ReadListings", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireScope("access_as_user");
+    })
+    // 3б: Кожна операція зміни вимагає ще й ролі з історій користувача
+    .AddPolicy("WriteListings", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireScope("access_as_user");
+        policy.RequireRole("User", "Admin");
+    });
+
 // Додаємо підтримку OpenAPI, ProblemDetails і валідації
 builder.Services.AddProblemDetails().AddValidation().AddOpenApi();
 
@@ -31,7 +61,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
     options.UseNpgsql(connectionString);
 });
-
 
 var app = builder.Build();
 
@@ -64,10 +93,14 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-// Підключаемо правило CORS
+// Підключаємо правило CORS (обов'язково ДО UseAuthentication)
 app.UseCors("AllowBlazorClient");
 
-// Базовий ендпойнт для Health Check + логування
+// Підключаємо перевірку JWT-токенів та політик доступу
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Базовий ендпойнт для Health Check + логування (залишаємо відкритим)
 app.MapGet("/health", (ILogger<Program> log) =>
 {
     log.LogInformation("Перевірка стану сервера: Health check викликаний.");
