@@ -81,3 +81,34 @@ erDiagram
 - [API Scope (`access_as_user`)](docs/entra-id/1a-api-scope.png)
 - [App Roles (`User`, `Admin`)](docs/entra-id/1b-app-roles.png)
 - [Role Assignments](docs/entra-id/1c-user-assignments.png)
+
+# API protection
+
+All `/api/listings` endpoints need an Entra ID access token (`Authorization: Bearer ...`).
+Reading requires the scope `access_as_user`. Changing data requires the scope and a role (`User` or `Admin`).
+
+Policies `ReadListings` and `WriteListings` are defined in `server/Program.cs` and applied to route groups in `server/Features/Listings/ListingEndpoints.cs`.
+
+| Endpoint | Scope | Role | Without token | Without scope or role |
+|---|---|---|---|---|
+| `GET /api/listings` | `access_as_user` | — | 401 | 403 |
+| `GET /api/listings/{id}` | `access_as_user` | — | 401 | 403 |
+| `POST /api/listings` | `access_as_user` | `User` or `Admin` | 401 | 403 |
+| `PUT /api/listings/{id}` | `access_as_user` | `User` or `Admin` | 401 | 403 |
+| `DELETE /api/listings/{id}` | `access_as_user` | `User` or `Admin` | 401 | 403 |
+
+`GET /health` is open.
+
+The client adds the access token only to requests to the API address (`ProfileApi:BaseUrl`, `AuthorizationMessageHandler` in `client/Program.cs`).
+
+# Integration tests
+
+Run `dotnet test server.Tests` (Docker must be running).
+
+| Check | Response | Test |
+|---|---|---|
+| No token | 401 | `AuthorizationTests.Request_without_token_returns_401_Unauthorized` |
+| Token of another API | 401 | `AuthorizationTests.Request_with_token_for_another_API_returns_401_Unauthorized` |
+| Expired token | 401 | `ExpiredTokenTests.Request_with_expired_token_returns_401_Unauthorized` |
+| Scope without role, changing data | 403 | `RoleTests.Changing_data_without_role_returns_403_Forbidden` |
+| Scope and role | 200 / 201 | `RoundTripTests.A_listing_created_through_the_API_is_read_back_from_PostgreSQL` |

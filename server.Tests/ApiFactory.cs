@@ -88,22 +88,53 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         return client;
     }
 
-    private static string GenerateJwtToken(string audience, string scope, string role)
+    // 4в: усе чинне (підпис, audience, scope, роль), крім строку дії
+    public HttpClient CreateClientWithExpiredToken()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Remove("Authorization");
+        var expiredToken = GenerateJwtToken(
+            audience: ValidAudience,
+            scope: "access_as_user",
+            role: "User",
+            expires: DateTime.UtcNow.AddHours(-1)); // більше за ClockSkew (5 хв)
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", expiredToken);
+        return client;
+    }
+
+    // 4г: scope є, ролі немає
+    public HttpClient CreateClientWithoutRole()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Remove("Authorization");
+        var tokenWithoutRole = GenerateJwtToken(
+            audience: ValidAudience,
+            scope: "access_as_user",
+            role: null);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenWithoutRole);
+        return client;
+    }
+
+    private static string GenerateJwtToken(string audience, string scope, string? role, DateTime? expires = null)
     {
         var credentials = new SigningCredentials(SigningKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, "test-user-id"),
-            new Claim("scp", scope),
-            new Claim(ClaimTypes.Role, role)
+            new Claim("scp", scope)
         };
+
+        if (role is not null)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken(
             issuer: TestIssuer,
             audience: audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(1),
+            expires: expires ?? DateTime.UtcNow.AddHours(1),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
