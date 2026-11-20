@@ -46,6 +46,9 @@ builder.Services.AddScoped<ProfileApiService>(sp =>
                 scopes: new[] { "api://6b99ada1-1ca0-4f7f-9a81-86cf13b17134/access_as_user" }
             );
 
+        // Without IHttpClientFactory the inner handler must be set manually
+        handler.InnerHandler = new HttpClientHandler();
+
         return new ProfileApiService(new HttpClient(handler)
         {
             BaseAddress = new Uri(profileApiBaseUrl)
